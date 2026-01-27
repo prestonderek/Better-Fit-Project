@@ -8,11 +8,25 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @Binding var role: AppRole
+
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        NavigationStack {
+            Form {
+                Section("Mode (Sprint 1)") {
+                    Picker("Role", selection: $role) {
+                        Text("Client").tag(AppRole.client)
+                        Text("Trainer").tag(AppRole.trainer)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section("Profile") {
+                    Text("Profile editing comes next.")
+                }
+            }
+            .navigationTitle("Profile")
+        }
     }
 }
 
-#Preview {
-    ProfileView()
-}

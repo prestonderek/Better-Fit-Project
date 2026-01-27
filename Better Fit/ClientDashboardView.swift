@@ -9,10 +9,16 @@ import SwiftUI
 
 struct ClientDashboardView: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        NavigationStack {
+            List {
+                Section("Tracking") {
+                    NavigationLink("Weight Log") { WeightLogView() }
+                    NavigationLink("Meals") { MealLogView() }
+                    NavigationLink("Workouts") { Text("Workouts (next)") }
+                }
+            }
+            .navigationTitle("Client Dashboard")
+        }
     }
 }
 
-#Preview {
-    ClientDashboardView()
-}
