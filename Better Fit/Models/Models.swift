@@ -56,3 +56,22 @@ final class MealEntry {
     }
 }
 
+@Model
+final class WorkoutEntry {
+    var id: UUID
+    var date: Date
+    var exerciseName: String
+    var sets: Int
+    var reps: Int
+    var weightLbs: Double
+    
+    init(date: Date = .now, exerciseName: String, sets: Int, reps: Int, weightLbs: Double)
+    {
+        self.id = UUID()
+        self.date = date
+        self.exerciseName = exerciseName
+        self.sets = sets
+        self.reps = reps
+        self.weightLbs = weightLbs
+    }
+}

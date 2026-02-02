@@ -6,19 +6,16 @@
 //
 
 import SwiftUI
-
-enum AppRole: String, CaseIterable, Codable {
-    case client
-    case trainer
-}
+import SwiftData
 
 struct ContentView: View {
-    @State private var role: AppRole = .client  // Sprint 1: simple toggle
+    @Environment(\.modelContext) private var modelContext
+    @StateObject private var store = UserProfileStore()
 
     var body: some View {
         TabView {
             Group {
-                if role == .client {
+                if (store.profile?.role ?? .client) == .client {
                     ClientDashboardView()
                 } else {
                     TrainerDashboardView()
@@ -28,10 +25,13 @@ struct ContentView: View {
                 Label("Dashboard", systemImage: "rectangle.grid.2x2")
             }
 
-            ProfileView(role: $role)
+            ProfileView(store: store)
                 .tabItem {
                     Label("Profile", systemImage: "person.circle")
                 }
+        }
+        .onAppear {
+            store.loadOrCreateProfile(modelContext: modelContext)
         }
     }
 }

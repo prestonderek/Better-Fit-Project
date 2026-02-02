@@ -17,7 +17,8 @@ struct BetterFitApp: App {
         .modelContainer(for: [
             UserProfile.self,
             WeightEntry.self,
-            MealEntry.self
+            MealEntry.self,
+            WorkoutEntry.self
         ])
     }
 }
