@@ -18,7 +18,9 @@ struct BetterFitApp: App {
             UserProfile.self,
             WeightEntry.self,
             MealEntry.self,
-            WorkoutEntry.self
+            WorkoutEntry.self,
+            ClientProfile.self,
+            ClientPlan.self
         ])
     }
 }

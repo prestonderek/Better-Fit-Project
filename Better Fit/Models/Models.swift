@@ -75,3 +75,35 @@ final class WorkoutEntry {
         self.weightLbs = weightLbs
     }
 }
+
+@Model
+final class ClientProfile {
+    var id: UUID
+    var name: String
+    var email: String
+    var createdAt: Date
+
+    init(name: String, email: String) {
+        self.id = UUID()
+        self.name = name
+        self.email = email
+        self.createdAt = .now
+    }
+}
+
+@Model
+final class ClientPlan {
+    var id: UUID
+    var clientId: UUID
+    var dailyCaloriesTarget: Int
+    var notes: String
+    var updatedAt: Date
+
+    init(clientId: UUID, dailyCaloriesTarget: Int, notes: String = "") {
+        self.id = UUID()
+        self.clientId = clientId
+        self.dailyCaloriesTarget = dailyCaloriesTarget
+        self.notes = notes
+        self.updatedAt = .now
+    }
+}
