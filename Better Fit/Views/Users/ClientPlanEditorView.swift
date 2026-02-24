@@ -13,58 +13,69 @@ struct ClientPlanEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var clientSession: ClientSession
 
     @Query private var plans: [ClientPlan]
 
-    @State private var caloriesText: String = ""
-    @State private var notes: String = ""
+    @State private var caloriesText = ""
+    @State private var notes = ""
     @State private var errorMessage: String?
+    @State private var showingClientPicker = false
 
-    init(client: ClientProfile) {
-        self.client = client
+    private var effectiveClient: ClientProfile {
+        clientSession.activeClient ?? client
+    }
 
-        let clientId = client.id
-        _plans = Query(
-            filter: #Predicate<ClientPlan> { plan in
-                plan.clientId == clientId
-            }
-        )
+    private var clientPlans: [ClientPlan] {
+        plans.filter { $0.clientId == effectiveClient.id }
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Daily Targets") {
-                    TextField("Calories (e.g., 2200)", text: $caloriesText)
-                        .keyboardType(.numberPad)
+        VStack(spacing: 8) {
+            if clientSession.activeClient != nil {
+                ActiveClientBanner(client: effectiveClient) {
+                    showingClientPicker = true
                 }
-
-                Section("Notes / Goals") {
-                    TextField("Notes (optional)", text: $notes)
-                }
-
-                Section {
-                    Button("Save Plan") { savePlan() }
-                        .buttonStyle(.borderedProminent)
-                }
+                .padding(.horizontal)
             }
-            .navigationTitle("Client Plan")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+
+            NavigationStack {
+                Form {
+                    Section("Daily Targets") {
+                        TextField("Calories (e.g., 2200)", text: $caloriesText)
+                            .keyboardType(.numberPad)
+                    }
+
+                    Section("Notes / Goals") {
+                        TextField("Notes (optional)", text: $notes)
+                    }
+
+                    Section {
+                        Button("Save Plan") { savePlan() }
+                            .buttonStyle(.borderedProminent)
+                    }
                 }
+                .navigationTitle("Client Plan")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
+                }
+                .alert("Oops", isPresented: .constant(errorMessage != nil)) {
+                    Button("OK") { errorMessage = nil }
+                } message: {
+                    Text(errorMessage ?? "")
+                }
+                .onAppear { loadExistingPlan() }
             }
-            .alert("Oops", isPresented: .constant(errorMessage != nil), actions: {
-                Button("OK") { errorMessage = nil }
-            }, message: {
-                Text(errorMessage ?? "")
-            })
-            .onAppear { loadExistingPlan() }
+        }
+        .sheet(isPresented: $showingClientPicker) {
+            TrainerClientPickerView()
         }
     }
 
     private func loadExistingPlan() {
-        if let existing = plans.first {
+        if let existing = clientPlans.first {
             caloriesText = String(existing.dailyCaloriesTarget)
             notes = existing.notes
         }
@@ -78,14 +89,14 @@ struct ClientPlanEditorView: View {
                 max: 20000
             )
 
-            if let existing = plans.first {
+            if let existing = clientPlans.first {
                 existing.dailyCaloriesTarget = calories
                 existing.notes = notes
                 existing.updatedAt = .now
             } else {
                 modelContext.insert(
                     ClientPlan(
-                        clientId: client.id,
+                        clientId: effectiveClient.id,
                         dailyCaloriesTarget: calories,
                         notes: notes
                     )

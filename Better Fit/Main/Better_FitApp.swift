@@ -10,6 +10,13 @@ import SwiftData
 
 @main
 struct BetterFitApp: App {
+    
+    init() {
+            UINavigationBar.appearance().largeTitleTextAttributes = [
+                .font: UIFont.systemFont(ofSize: 34, weight: .bold)
+            ]
+        }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()

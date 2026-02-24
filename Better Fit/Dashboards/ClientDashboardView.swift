@@ -9,6 +9,8 @@ import SwiftUI
 import SwiftData
 
 struct ClientDashboardView: View {
+    @EnvironmentObject var clientSession: ClientSession
+
     @Query(sort: [SortDescriptor(\WeightEntry.date, order: .reverse)])
     private var weights: [WeightEntry]
 
@@ -19,51 +21,102 @@ struct ClientDashboardView: View {
     private var workouts: [WorkoutEntry]
 
     var body: some View {
+        Group {
+            if let activeClient = clientSession.activeClient {
+                dashboard(for: activeClient)
+            } else {
+                noClientSelectedView
+            }
+        }
+    }
+
+    // MARK: - Main Dashboard (safe, client-aware)
+
+    private func dashboard(for client: ClientProfile) -> some View {
         NavigationStack {
             List {
-                Section("Summary") {
-                    SummaryRow(
-                        title: "Latest Weight",
-                        value: latestWeightText,
-                        systemImage: "scalemass"
-                    )
+                // MARK: Summary
+                Section {
+                    CardView {
+                        SummaryRow(
+                            title: "Latest Weight",
+                            value: latestWeightText(for: client),
+                            systemImage: "scalemass"
+                        )
+                    }
+                    .listRowBackground(Color.clear)
 
-                    SummaryRow(
-                        title: "Today's Calories",
-                        value: todaysCaloriesText,
-                        systemImage: "flame"
-                    )
+                    CardView {
+                        SummaryRow(
+                            title: "Today's Calories",
+                            value: todaysCaloriesText(for: client),
+                            systemImage: "flame"
+                        )
+                    }
+                    .listRowBackground(Color.clear)
 
-                    SummaryRow(
-                        title: "Last Workout",
-                        value: lastWorkoutText,
-                        systemImage: "dumbbell"
-                    )
+                    CardView {
+                        SummaryRow(
+                            title: "Last Workout",
+                            value: lastWorkoutText(for: client),
+                            systemImage: "dumbbell"
+                        )
+                    }
+                    .listRowBackground(Color.clear)
+                } header: {
+                    SectionHeaderView("Summary", systemImage: "chart.bar")
                 }
 
-                Section("Tracking") {
-                    NavigationLink("Weight Log") { WeightLogView() }
-                    NavigationLink("Meals") { MealLogView() }
-                    NavigationLink("Workouts") { WorkoutLogView() }
+                // MARK: Tracking
+                Section {
+                    NavigationLink("Weight Log") {
+                        WeightLogView(clientId: client.id)
+                    }
+
+                    NavigationLink("Meals") {
+                        MealLogView(clientId: client.id)
+                    }
+
+                    NavigationLink("Workouts") {
+                        WorkoutLogView(clientId: client.id)
+                    }
+                } header: {
+                    SectionHeaderView("Tracking", systemImage: "chart.bar")
                 }
             }
             .navigationTitle("Client Dashboard")
         }
     }
 
-    private var latestWeightText: String {
-        DashboardStats.latestWeightText(weights: weights)
+    // MARK: - Empty State (no active client)
+
+    private var noClientSelectedView: some View {
+        ContentUnavailableView(
+            "No Client Selected",
+            systemImage: "person.crop.circle.badge.questionmark",
+            description: Text("Select a client to view their dashboard.")
+        )
     }
 
-    private var todaysCaloriesText: String {
-        DashboardStats.todaysCaloriesText(meals: meals)
+    // MARK: - Dashboard Stats (filtered by client)
+
+    private func latestWeightText(for client: ClientProfile) -> String {
+        let clientWeights = weights.filter { $0.clientId == client.id }
+        return DashboardStats.latestWeightText(weights: clientWeights)
     }
 
-    private var lastWorkoutText: String {
-        DashboardStats.lastWorkoutText(workouts: workouts)
+    private func todaysCaloriesText(for client: ClientProfile) -> String {
+        let clientMeals = meals.filter { $0.clientId == client.id }
+        return DashboardStats.todaysCaloriesText(meals: clientMeals)
     }
 
+    private func lastWorkoutText(for client: ClientProfile) -> String {
+        let clientWorkouts = workouts.filter { $0.clientId == client.id }
+        return DashboardStats.lastWorkoutText(workouts: clientWorkouts)
+    }
 }
+
+// MARK: - Summary Row (unchanged)
 
 private struct SummaryRow: View {
     let title: String
@@ -71,16 +124,30 @@ private struct SummaryRow: View {
     let systemImage: String
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Theme.Spacing.md) {
             Image(systemName: systemImage)
+                .foregroundStyle(Theme.Colors.primary)
                 .frame(width: 24)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                 Text(title)
-                    .font(.subheadline)
+                    .font(Theme.Fonts.sectionHeader)
                     .foregroundStyle(.secondary)
                 Text(value)
-                    .font(.headline)
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(Brand.Accent.primary)
+                    .monospacedDigit()
+            }
+
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(Brand.Accent.primary.opacity(0.15))
+                    .frame(width: 36, height: 36)
+
+                Image(systemName: systemImage)
+                    .foregroundStyle(Brand.Accent.primary)
             }
         }
         .padding(.vertical, 4)

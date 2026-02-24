@@ -9,35 +9,40 @@ import SwiftUI
 import SwiftData
 
 struct WorkoutLogView: View {
+    let clientId: UUID
+
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: [SortDescriptor(\WorkoutEntry.date, order: .reverse)])
-    private var workouts: [WorkoutEntry]
+    @Query private var workouts: [WorkoutEntry]
 
-    @State private var exerciseName: String = ""
-    @State private var setsText: String = "3"
-    @State private var repsText: String = "10"
-    @State private var weightText: String = "0"
-
+    @State private var exerciseName = ""
+    @State private var setsText = "3"
+    @State private var repsText = "10"
+    @State private var weightText = "0"
     @State private var errorMessage: String?
+
+    init(clientId: UUID) {
+        self.clientId = clientId
+        _workouts = Query(
+            filter: #Predicate<WorkoutEntry> { $0.clientId == clientId },
+            sort: [SortDescriptor(\WorkoutEntry.date, order: .reverse)]
+        )
+    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
-
                 VStack(spacing: 10) {
-                    TextField("Exercise name (e.g., Bench Press)", text: $exerciseName)
+                    TextField("Exercise", text: $exerciseName)
                         .textFieldStyle(.roundedBorder)
 
                     HStack {
                         TextField("Sets", text: $setsText)
                             .keyboardType(.numberPad)
                             .textFieldStyle(.roundedBorder)
-
                         TextField("Reps", text: $repsText)
                             .keyboardType(.numberPad)
                             .textFieldStyle(.roundedBorder)
-
-                        TextField("Weight (lbs)", text: $weightText)
+                        TextField("Weight", text: $weightText)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(.roundedBorder)
                     }
@@ -49,20 +54,17 @@ struct WorkoutLogView: View {
 
                 if workouts.isEmpty {
                     ContentUnavailableView(
-                        "No workouts logged yet",
+                        "No workouts logged",
                         systemImage: "dumbbell",
                         description: Text("Add your first workout above.")
                     )
                 } else {
                     List {
                         ForEach(workouts, id: \.id) { w in
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading) {
                                 Text(w.exerciseName)
                                     .font(.headline)
-
-                                Text("\(w.sets) sets × \(w.reps) reps @ \(w.weightLbs, specifier: "%.1f") lbs")
-
-                                Text(w.date.formatted(date: .abbreviated, time: .shortened))
+                                Text("\(w.sets)x\(w.reps) @ \(w.weightLbs, specifier: "%.0f") lbs")
                                     .foregroundStyle(.secondary)
                             }
                         }
@@ -71,11 +73,11 @@ struct WorkoutLogView: View {
                 }
             }
             .navigationTitle("Workout Log")
-            .alert("Oops", isPresented: .constant(errorMessage != nil), actions: {
+            .alert("Oops", isPresented: .constant(errorMessage != nil)) {
                 Button("OK") { errorMessage = nil }
-            }, message: {
+            } message: {
                 Text(errorMessage ?? "")
-            })
+            }
         }
     }
 
@@ -85,30 +87,27 @@ struct WorkoutLogView: View {
             let sets = try Validators.parsePositiveInt(setsText, fieldName: "Sets", max: 100)
             let reps = try Validators.parsePositiveInt(repsText, fieldName: "Reps", max: 1000)
 
-            // Weight: allow 0 for bodyweight movements, but don't allow negative.
-            let trimmed = weightText.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let weight = Double(trimmed) else {
-                throw ValidationError.message("Weight must be a number.")
-            }
-            guard weight >= 0 else {
-                throw ValidationError.message("Weight cannot be negative.")
-            }
-            guard weight <= 5000 else {
-                throw ValidationError.message("Weight must be ≤ 5000.")
-            }
+            let weight = Double(weightText.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+            if weight < 0 { throw ValidationError.message("Weight cannot be negative.") }
 
             modelContext.insert(
-                WorkoutEntry(date: .now, exerciseName: name, sets: sets, reps: reps, weightLbs: weight)
+                WorkoutEntry(
+                    date: .now,
+                    exerciseName: name,
+                    sets: sets,
+                    reps: reps,
+                    weightLbs: weight,
+                    clientId: clientId
+                )
             )
+
+            exerciseName = ""
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
     private func delete(_ offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(workouts[index])
-        }
+        offsets.forEach { modelContext.delete(workouts[$0]) }
     }
 }
-

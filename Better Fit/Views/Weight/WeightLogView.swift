@@ -9,11 +9,22 @@ import SwiftUI
 import SwiftData
 
 struct WeightLogView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \WeightEntry.date, order: .reverse) private var entries: [WeightEntry]
+    let clientId: UUID
 
-    @State private var weightText: String = ""
+    @Environment(\.modelContext) private var modelContext
+
+    @Query private var entries: [WeightEntry]   // no filter here
+
+    @State private var weightText = ""
     @State private var errorMessage: String?
+
+    init(clientId: UUID) {
+        self.clientId = clientId
+        _entries = Query(
+            filter: #Predicate<WeightEntry> { $0.clientId == clientId },
+            sort: [SortDescriptor(\WeightEntry.date, order: .reverse)]
+        )
+    }
 
     var body: some View {
         NavigationStack {
@@ -23,21 +34,22 @@ struct WeightLogView: View {
                         .keyboardType(.decimalPad)
                         .textFieldStyle(.roundedBorder)
 
-                    Button("Add") {
-                        addEntry()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(Double(weightText) == nil)
+                    Button("Add") { addEntry() }
+                        .buttonStyle(.borderedProminent)
                 }
                 .padding(.horizontal)
 
                 if entries.isEmpty {
-                    ContentUnavailableView("No weight entries yet", systemImage: "scalemass", description: Text("Add your first weigh-in above."))
+                    ContentUnavailableView(
+                        "No weight entries",
+                        systemImage: "scalemass",
+                        description: Text("Add your first weigh-in above.")
+                    )
                 } else {
                     List {
                         ForEach(entries, id: \.id) { e in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("\(e.weightLbs, specifier: "%.1f") lbs")
+                            VStack(alignment: .leading) {
+                                Text(String(format: "%.1f lbs", e.weightLbs))
                                     .font(.headline)
                                 Text(e.date.formatted(date: .abbreviated, time: .omitted))
                                     .foregroundStyle(.secondary)
@@ -46,28 +58,28 @@ struct WeightLogView: View {
                         .onDelete(perform: delete)
                     }
                 }
-
             }
             .navigationTitle("Weight Log")
-            .alert("Uh Oh!", isPresented: .constant(errorMessage != nil), actions: { Button("OK") {errorMessage = nil }}, message: { Text(errorMessage ?? "")})
+            .alert("Oops", isPresented: .constant(errorMessage != nil)) {
+                Button("OK") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
         }
     }
 
     private func addEntry() {
         do {
             let w = try Validators.parsePositiveDouble(weightText, fieldName: "Weight", max: 1200)
-            modelContext.insert(WeightEntry(date: .now, weightLbs: w))
+            modelContext.insert(WeightEntry(date: .now, weightLbs: w, clientId: clientId))
             weightText = ""
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-
-    private func delete(at offsets: IndexSet) {
-        for i in offsets {
-            modelContext.delete(entries[i])
-        }
+    private func delete(_ offsets: IndexSet) {
+        offsets.forEach { modelContext.delete(entries[$0]) }
     }
 }
 

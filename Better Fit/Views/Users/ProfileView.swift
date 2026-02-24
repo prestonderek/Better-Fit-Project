@@ -19,25 +19,30 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Mode") {
+                Section {
                     Picker("Role", selection: $role) {
                         Text("Client").tag(AppRole.client)
                         Text("Trainer").tag(AppRole.trainer)
                     }
                     .pickerStyle(.segmented)
                 }
+                header: {
+                    SectionHeaderView("Mode", systemImage: "rectangle.on.rectangle")
+                }
 
-                Section("Profile") {
+                Section {
                     TextField("Name", text: $name)
                     TextField("Email", text: $email)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
+                } header: {
+                    SectionHeaderView("Profile", systemImage: "person.circle")
                 }
 
                 Section {
                     Button("Save") { save() }
                         .buttonStyle(.borderedProminent)
-                }
+                } 
             }
             .navigationTitle("Profile")
             .onAppear { loadToUI() }

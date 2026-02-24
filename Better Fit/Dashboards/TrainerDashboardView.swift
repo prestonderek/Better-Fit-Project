@@ -10,6 +10,8 @@ import SwiftData
 
 struct TrainerDashboardView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject var clientSession: ClientSession
+    
     @Query(sort: [SortDescriptor(\ClientProfile.createdAt)])
     private var clients: [ClientProfile]
 
@@ -25,18 +27,29 @@ struct TrainerDashboardView: View {
                         description: Text("Add your first client to get started.")
                     )
                 } else {
-                    ForEach(clients, id: \.id) { client in
+                    ForEach(clients.filter {
+                        !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                        !$0.email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    }, id: \.id) { client in
                         NavigationLink {
                             ClientDetailView(client: client)
                         } label: {
-                            VStack(alignment: .leading) {
+                            CardView {
                                 Text(client.name)
-                                    .font(.headline)
+                                    .font(Theme.Fonts.title)
+
                                 Text(client.email)
+                                    .font(Theme.Fonts.caption)
                                     .foregroundStyle(.secondary)
                             }
                         }
+                        .simultaneousGesture(
+                            TapGesture().onEnded {
+                                clientSession.activeClient = client
+                            }
+                        )
                     }
+                    .listRowBackground(Color.clear)
                 }
             }
             .navigationTitle("Trainer Dashboard")

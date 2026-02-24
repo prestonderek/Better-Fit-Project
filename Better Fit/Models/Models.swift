@@ -33,11 +33,13 @@ final class WeightEntry {
     var id: UUID
     var date: Date
     var weightLbs: Double
+    var clientId: UUID
 
-    init(date: Date = .now, weightLbs: Double) {
+    init(date: Date = .now, weightLbs: Double, clientId: UUID) {
         self.id = UUID()
         self.date = date
         self.weightLbs = weightLbs
+        self.clientId = clientId
     }
 }
 
@@ -47,12 +49,14 @@ final class MealEntry {
     var date: Date
     var calories: Int
     var note: String
+    var clientId: UUID
 
-    init(date: Date = .now, calories: Int, note: String = "") {
+    init(date: Date = .now, calories: Int, note: String = "", clientId: UUID) {
         self.id = UUID()
         self.date = date
         self.calories = calories
         self.note = note
+        self.clientId = clientId
     }
 }
 
@@ -64,8 +68,9 @@ final class WorkoutEntry {
     var sets: Int
     var reps: Int
     var weightLbs: Double
+    var clientId: UUID
     
-    init(date: Date = .now, exerciseName: String, sets: Int, reps: Int, weightLbs: Double)
+    init(date: Date = .now, exerciseName: String, sets: Int, reps: Int, weightLbs: Double, clientId: UUID)
     {
         self.id = UUID()
         self.date = date
@@ -73,6 +78,7 @@ final class WorkoutEntry {
         self.sets = sets
         self.reps = reps
         self.weightLbs = weightLbs
+        self.clientId = clientId
     }
 }
 
