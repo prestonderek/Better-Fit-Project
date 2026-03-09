@@ -11,6 +11,7 @@ import SwiftData
 struct TrainerDashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var clientSession: ClientSession
+    @EnvironmentObject var authService: AuthService
     
     @Query(sort: [SortDescriptor(\ClientProfile.createdAt)])
     private var clients: [ClientProfile]
@@ -54,10 +55,17 @@ struct TrainerDashboardView: View {
             }
             .navigationTitle("Trainer Dashboard")
             .toolbar {
-                Button {
-                    showingAddClient = true
-                } label: {
-                    Image(systemName: "plus")
+                ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            showingAddClient = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Logout") {
+                        try? authService.signOut()
+                    }
                 }
             }
             .sheet(isPresented: $showingAddClient) {

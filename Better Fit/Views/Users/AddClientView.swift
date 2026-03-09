@@ -53,12 +53,23 @@ struct AddClientView: View {
             let validName = try Validators.nonEmpty(name, fieldName: "Name", minChars: 2)
             let validEmail = try Validators.nonEmpty(email, fieldName: "Email", minChars: 5)
 
+            // Create local client
             let newClient = ClientProfile(name: validName, email: validEmail)
             modelContext.insert(newClient)
 
-            //immediately select the new client
+            // Set active client locally
             clientSession.activeClient = newClient
+
+            // Save to Firestore (cloud)
+            Task {
+                try? await FirestoreService.shared.createClient(
+                    name: validName,
+                    email: validEmail
+                )
+            }
+
             dismiss()
+
         } catch {
             errorMessage = error.localizedDescription
         }

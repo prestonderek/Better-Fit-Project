@@ -7,27 +7,31 @@
 
 import SwiftUI
 import SwiftData
+import FirebaseCore
 
 @main
 struct BetterFitApp: App {
-    
+
+    @StateObject private var authService = AuthService()
+    @StateObject private var clientSession = ClientSession()
+
     init() {
-            UINavigationBar.appearance().largeTitleTextAttributes = [
-                .font: UIFont.systemFont(ofSize: 34, weight: .bold)
-            ]
-        }
-    
+        FirebaseApp.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AuthGateView()
+                .environmentObject(authService)
+                .environmentObject(clientSession)
         }
         .modelContainer(for: [
-            UserProfile.self,
+            ClientProfile.self,
+            ClientPlan.self,
             WeightEntry.self,
             MealEntry.self,
             WorkoutEntry.self,
-            ClientProfile.self,
-            ClientPlan.self
+            UserProfile.self
         ])
     }
 }
